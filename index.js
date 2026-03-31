@@ -137,7 +137,7 @@ const port = process.env.PORT || 9090;
   console.log('All plugins loaded ✅');
   console.log('Bot connected to whatsapp ✅')
   
-  let up = `╭─────────────━┈⊷ \n│🌏 *ʙᴏᴛ ɪs ᴄᴏɴɴᴇᴄᴛᴇᴅ*\n╰─────────────━┈⊷\n│💫 ᴘʀᴇғɪx: *[ ${prefix} ]*\n│⭕ ᴍᴏᴅᴇ: *${cmode}*\n│📍 ᴠᴇʀꜱɪᴏɴ: *1.0.0*\n│🤖 ʙᴏᴛ ɴᴀᴍᴇ: *ʙᴇɴ ʙᴏᴛ*\n│👨‍💻 ᴏᴡɴᴇʀ : *ɴᴏᴛʜɪɴɢ*\n╰─────────────━┈⊷\n*Join Whatsapp Channel For Updates*\n> https://whatsapp.com/channel/0029Vb7BSFiF1YlZvGTqGv0v\n \ud83d\udda4`;
+  let up = `╭─────────────━┈⊷ \n│🌏 *ʙᴏᴛ ɪs ᴄᴏɴɴᴇᴄᴛᴇᴅ*\n╰─────────────━┈⊷\n│💫 ᴘʀᴇғɪx: *[ ${prefix} ]*\n│⭕ ᴍᴏᴅᴇ: *${cmode}*\n│📍 ᴠᴇʀꜱɪᴏɴ: *1.0.0*\n│🤖 ʙᴏᴛ ɴᴀᴍᴇ: *ᴛᴇꜱʟᴀ ʙᴏᴛ*\n│👨‍💻 ᴏᴡɴᴇʀ : *ɴᴏᴛʜɪɴɢ*\n╰─────────────━┈⊷\n*Join Whatsapp Channel For Updates*\n> https://whatsapp.com/channel/0029Vb7BSFiF1YlZvGTqGv0v\n \ud83d\udda4`;
     conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/3fuy44.jpg` }, caption: up })
   }
   })
@@ -916,7 +916,7 @@ if (!isReact && config.CUSTOM_REACT === 'true') {
       </head>
       <body>
         <div class="card">
-          <h1><span class="status-dot"></span> T E S A L A | BOT IS RUNNING</h1>
+          <h1><span class="status-dot"></span> T E S L A | BOT IS RUNNING</h1>
           <p>T E S L A | BOT OWNER IS NOTHING.</p>
         </div>
       </body>
