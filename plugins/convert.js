@@ -9,7 +9,6 @@ const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 const {cmd , commands} = require('../command')
 const { videoToWebp } = require('../lib/video-utils');
-const { Sticker, createSticker, StickerTypes } = require("wa-sticker-formatter");
 const config = require("../config");
 const converter = require('../data/converter');
 const stickerConverter = require('../data/sticker-converter');
@@ -37,7 +36,7 @@ function getNewsletterContext(senderJid) {
 
 
 
-cmd(
+/*cmd(
   {
     pattern: 'take',
     alias: ['rename', 'stake'],
@@ -80,6 +79,7 @@ cmd(
     }
   }
 );
+
 
 // STICKER COMMAND
 cmd(
@@ -266,6 +266,8 @@ cmd({
         }, { quoted: message });
     }
 });
+
+*/
 
 cmd({
   pattern: 'tomp3',
