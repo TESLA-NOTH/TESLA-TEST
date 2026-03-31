@@ -19,11 +19,32 @@ function saveDB(db) {
 }
 
 async function isValidWord(word) {
+  // تبدیل به حروف کوچک و trim
+  word = word.trim().toLowerCase();
+
+  // fallback داخلی: فقط حروف انگلیسی و حداقل 2 حرف
+  const fallbackCheck = /^[a-z]{2,}$/.test(word);
+
   try {
-    const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
-    return Array.isArray(res.data);
-  } catch {
-    return false;
+    const query = encodeURIComponent(word);
+    const url = `https://api.siputzx.my.id/api/ai/duckai?message=${query}&model=gpt-4o-mini`;
+    const res = await axios.get(url);
+
+    if (!res.data || !res.data.status) return fallbackCheck;
+
+    const message = res.data.data.message.toLowerCase();
+
+    // اگر پیام شامل "the correct spelling is" یا "recognized as a standard english word" باشد، کلمه درست است
+    if (message.includes("the correct spelling is") || message.includes("recognized as a standard english word")) {
+      return true;
+    } else {
+      // اگر API پاسخی درست نداد، fallback داخلی بررسی شود
+      return fallbackCheck;
+    }
+  } catch (e) {
+    console.error("Error in isValidWord:", e.message);
+    // هنگام خطا، فقط fallback داخلی
+    return fallbackCheck;
   }
 }
 
@@ -121,6 +142,8 @@ cmd({
   );
 });
 
+const lastError = {}; // ذخیره آخرین خطای هر بازیکن
+
 cmd({
   on: "body"
 }, async (conn, mek, m, { from, body, sender, reply }) => {
@@ -149,9 +172,31 @@ cmd({
   const currentPlayer = game.players[game.turn];
   if (currentPlayer !== sender) return;
 
-  if (!/^[a-z]{2,}$/.test(text)) return reply("⚠️ Only alphabetic English words are allowed.");
-  if (text.length < game.wordLimit) return reply(`📏 Word must be at least *${game.wordLimit}* letters.`);
-  if (game.words.includes(text)) return reply("♻️ Word already used!");
+  // بررسی اولیه قبل از API
+  if (!/^[a-z]{2,}$/.test(text)) {
+    if (lastError[sender] !== "⚠️ Only alphabetic English words are allowed.") {
+      lastError[sender] = "⚠️ Only alphabetic English words are allowed.";
+      return reply(lastError[sender]);
+    } else return; // جلوگیری از اسپم
+  }
+
+  if (text.length < game.wordLimit) {
+    if (lastError[sender] !== `📏 Word must be at least *${game.wordLimit}* letters.`) {
+      lastError[sender] = `📏 Word must be at least *${game.wordLimit}* letters.`;
+      return reply(lastError[sender]);
+    } else return;
+  }
+
+  if (game.words.includes(text)) {
+    if (lastError[sender] !== "♻️ Word already used!") {
+      lastError[sender] = "♻️ Word already used!";
+      return reply(lastError[sender]);
+    } else return;
+  }
+
+  // پاک کردن آخرین خطا قبل از API
+  lastError[sender] = null;
+
   if (!(await isValidWord(text))) return reply("❌ Not a valid English word!");
 
   if (game.words.length > 0) {

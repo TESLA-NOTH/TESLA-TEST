@@ -15,9 +15,9 @@ const commandPrefix = config.PREFIX;
 
 
 
-/*
+
 cmd({
-    pattern: "menu",
+    pattern: "menu2",
     react: "✅",
     desc: "Check bot owner.",
     category: "menu",
@@ -110,7 +110,7 @@ cmd({
         await reply("An error occurred. Please try again.");
     }
 });
-*/
+
 
 cmd({
     pattern: "menu",

@@ -530,7 +530,7 @@ cmd({
   try {
     await reply("🛠 Process latest update...");
 
-    const zipUrl = "https://github.com/NOTH-TESLA/TESLA-BOT/archive/refs/heads/main.zip";
+    const zipUrl = "https://github.com/TESLA-NOTH/TESLA-TEST/archive/refs/heads/main.zip";
     const zipPath = path.join(__dirname, "repo.zip");
     const extractPath = path.join(__dirname, "update_tmp");
 
