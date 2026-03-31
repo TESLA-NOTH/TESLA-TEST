@@ -31,7 +31,6 @@ const {
   const config = require('./config')
   const GroupEvents = require('./lib/groupevents');
   const qrcode = require('qrcode-terminal')
-  const StickersTypes = require('wa-sticker-formatter')
   const util = require('util')
   const { sms, downloadMediaMessage, AntiDelete } = require('./lib')
   const FileType = require('file-type');
