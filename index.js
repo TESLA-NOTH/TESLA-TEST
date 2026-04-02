@@ -33,15 +33,12 @@ const {
   const qrcode = require('qrcode-terminal')
   const util = require('util')
   const { sms, downloadMediaMessage, AntiDelete } = require('./lib')
-  const FileType = require('file-type');
   const axios = require('axios')
-  const { fromBuffer } = require('file-type')
   const bodyparser = require('body-parser')
   const os = require('os')
   const Crypto = require('crypto')
   const path = require('path')
   const cmode = config.MODE
-  const prefix = config.PREFIX
   const https = require('https');
   
   const ownerNumber = ['93794320865']
@@ -112,34 +109,48 @@ const port = process.env.PORT || 9090;
           version
           })
       
-  conn.ev.on('connection.update', (update) => {
-  const { connection, lastDisconnect } = update
-  if (connection === 'close') {
-  if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
-  connectToWA()
-  }
-  } else if (connection === 'open') {
-  console.log('🧬 Installing Plugins')
-
-  const path = require('path');
-  const pluginsPath = path.join(__dirname, "plugins");
-
-  fs.readdirSync(pluginsPath).forEach((plugin) => {
-    if (path.extname(plugin).toLowerCase() === ".js") {
-      try {
-        require(path.join(pluginsPath, plugin));
-      } catch (err) {
-        console.error(`❌ Plugin error in "${plugin}":`, err.message);
-      }
-    }
+  conn.ev.on('call', async (json) => {
+      const { Anticall } = require('./plugins/anti-call'); // مسیر درست فایل
+      await Anticall(json, conn);
   });
+  conn.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect } = update
+    if (connection === 'close') {
+      if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
+        connectToWA()
+      }
+    } else if (connection === 'open') {
+      console.log('🧬 Installing Plugins')
   
-  console.log('All plugins loaded ✅');
-  console.log('Bot connected to whatsapp ✅')
+      const path = require('path');
+      
+      const pluginsPath = path.join(__dirname, "plugins");
+
+      fs.readdirSync(pluginsPath).forEach((plugin) => {
+                if (path.extname(plugin).toLowerCase() === ".js") {
+              try {
+                  // تلاش برای لود plugin
+                  require(path.join(pluginsPath, plugin));
+              } catch (err) {
+                  if (err.code === 'MODULE_NOT_FOUND') {
+                      console.warn(`⚠️ Plugin "${plugin}" missing module: ${err.message}`);
+                  } else {
+                      console.error(`❌ Plugin error in "${plugin}": ${err.message}`);
+                  }
+              }
+          }
+      });
   
-  let up = `╭─────────────━┈⊷ \n│🌏 *ʙᴏᴛ ɪs ᴄᴏɴɴᴇᴄᴛᴇᴅ*\n╰─────────────━┈⊷\n│💫 ᴘʀᴇғɪx: *[ ${prefix} ]*\n│⭕ ᴍᴏᴅᴇ: *${cmode}*\n│📍 ᴠᴇʀꜱɪᴏɴ: *1.0.0*\n│🤖 ʙᴏᴛ ɴᴀᴍᴇ: *ᴛᴇꜱʟᴀ ʙᴏᴛ*\n│👨‍💻 ᴏᴡɴᴇʀ : *ɴᴏᴛʜɪɴɢ*\n╰─────────────━┈⊷\n*Join Whatsapp Channel For Updates*\n> https://whatsapp.com/channel/0029Vb7BSFiF1YlZvGTqGv0v\n \ud83d\udda4`;
-    conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/3fuy44.jpg` }, caption: up })
-  }
+      console.log('All plugins loaded ✅');
+      console.log('Bot connected to whatsapp ✅');
+  
+      const botNumber = conn.user.id.split(':')[0]; // شماره واقعی بات
+      await config.loadConfig(botNumber); // بارگذاری تنظیمات از server.js بدون خطا
+      
+  
+      let up = `╭─────────────━┈⊷ \n│🌏 *ʙᴏᴛ ɪs ᴄᴏɴɴᴇᴄᴛᴇᴅ*\n╰─────────────━┈⊷\n│💫 ᴘʀᴇғɪx: *[ ${config.PREFIX} ]*\n│⭕ ᴍᴏᴅᴇ: *${cmode}*\n│📍 ᴠᴇʀꜱɪᴏɴ: *1.0.0*\n│🤖 ʙᴏᴛ ɴᴀᴍᴇ: *ᴛᴇꜱʟᴀ ʙᴏᴛ*\n│👨‍💻 ᴏᴡɴᴇʀ : *ɴᴏᴛʜɪɴɢ*\n╰─────────────━┈⊷\n*Join Whatsapp Channel For Updates*\n> https://whatsapp.com/channel/0029Vb7BSFiF1YlZvGTqGv0v\n \ud83d\udda4`;
+      conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/3fuy44.jpg` }, caption: up })
+    }
   })
   conn.ev.on('creds.update', saveCreds)
 
@@ -192,7 +203,7 @@ const port = process.env.PORT || 9090;
     }
   }
   if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REACT === "true"){
-    const jawadlike = await conn.decodeJid(conn.user.id);
+    const teslalk = await conn.decodeJid(conn.user.id);
     const emojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '🇦🇫', '💜', '💙', '🌝', '🖤', '💚'];
     const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
     await conn.sendMessage(mek.key.remoteJid, {
@@ -200,8 +211,19 @@ const port = process.env.PORT || 9090;
         text: randomEmoji,
         key: mek.key,
       } 
-    }, { statusJidList: [mek.key.participant, jawadlike] });
+    }, { statusJidList: [mek.key.participant, teslalk] });
   }                       
+  // داخل handler اصلی یا event 'message.upsert'
+  if (config.READ_CMD === "true" && m.text) {
+      const isCommand = m.text.startsWith(config.PREFIX);
+      if (isCommand) {
+          // دستور دیده شد، اما پاسخی داده نمی‌شود
+          
+          // اینجا می‌توان اگر خواستی ذخیره هم بکنی:
+          // await saveMessage(m);
+      }
+      // بقیه پیام‌ها نادیده گرفته می‌شوند
+  }
   if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REPLY === "true"){
   const user = mek.key.participant
   const text = `${config.AUTO_STATUS_MSG}`
@@ -216,9 +238,9 @@ const port = process.env.PORT || 9090;
   const from = mek.key.remoteJid
   const quoted = type == 'extendedTextMessage' && mek.message.extendedTextMessage.contextInfo != null ? mek.message.extendedTextMessage.contextInfo.quotedMessage || [] : []
   const body = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : (type == 'imageMessage') && mek.message.imageMessage.caption ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption ? mek.message.videoMessage.caption : ''
-  const isCmd = body.startsWith(prefix)
+  const isCmd = body.startsWith(config.PREFIX)
   var budy = typeof mek.text == 'string' ? mek.text : false;
-  const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : ''
+  const command = isCmd ? body.slice(config.PREFIX.length).trim().split(' ').shift().toLowerCase() : ''
   const args = body.trim().split(/ +/).slice(1)
   const q = args.join(' ')
   const text = args.join(' ')
@@ -773,7 +795,7 @@ if (!isReact && config.CUSTOM_REACT === 'true') {
                         global.email
                     }\nitem2.X-ABLabel:GitHub\nitem3.URL:https://github.com/${
                         global.github
-                    }/tesla-xmd\nitem3.X-ABLabel:GitHub\nitem4.ADR:;;${
+                    }/tesla-bot\nitem3.X-ABLabel:GitHub\nitem4.ADR:;;${
                         global.location
                     };;;;\nitem4.X-ABLabel:Region\nEND:VCARD`,
                 });
