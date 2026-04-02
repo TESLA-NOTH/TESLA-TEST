@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install && npm install -g pm2 qrcode-terminal
+RUN npm install && npm install -g pm2
 
 COPY . .
 

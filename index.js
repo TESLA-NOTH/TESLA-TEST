@@ -30,7 +30,6 @@ const {
   const P = require('pino')
   const config = require('./config')
   const GroupEvents = require('./lib/groupevents');
-  const qrcode = require('qrcode-terminal')
   const util = require('util')
   const { sms, downloadMediaMessage, AntiDelete } = require('./lib')
   const axios = require('axios')
