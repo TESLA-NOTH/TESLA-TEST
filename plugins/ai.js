@@ -2,7 +2,6 @@ const { cmd } = require("../command");
 const axios = require("axios");
 const fs = require("fs");
 const config = require("../config");
-const { setConfig, getConfig } = require("../lib/configdb");
 const prefix = config.PREFIX;
 
 // Default AI state if not set
@@ -20,7 +19,7 @@ function getNewsletterContext(senderJid) {
         }
     };
 }
-
+/*
 cmd({
     pattern: "chatbot",
     desc: "Enable or disable AI chatbot responses",
@@ -96,7 +95,7 @@ cmd({
 });
 
 
-
+*/
 
 
 
@@ -110,82 +109,34 @@ cmd({
 
 
 cmd({
-  pattern: "ai",
-  alias: ["dj", "gpt", "gpt4", "bing"],
-  desc: "Chat with an AI model",
-  category: "ai",
-  react: "🤖",
-  filename: __filename,
-}, async (conn, mek, m, { from, args, q, reply, react }) => {
-  try {
-    if (!q) return reply("Please provide a message for the AI.\nExample: `.ai Hello`");
-
-    const fs = require("fs");
-    const axios = require("axios");
-
-    // شماره صاحب ربات از config
-    const config = require('../config'); // فرضاً config.js دارای { OWNER_NUMBER: '1234567890' }
-    const ownerNumber = config.OWNER_NUMBER || "Not set";
-
-    const lowerQ = q.toLowerCase();
-
-    // === بررسی درخواست شماره یا اطلاعات مالک ===
-    const ownerRequestPatterns = [
-      /send me your number/i,
-      /what'?s your number/i,
-      /give me your contact/i,
-      /your phone number/i
-    ];
-
-    if (ownerRequestPatterns.some(rx => rx.test(lowerQ))) {
-      return reply(`📱 My owner's number is: ${ownerNumber}`);
-    }
-
-    // === ارسال باقی پیام‌ها به هوش مصنوعی ===
-    const apiUrl = `https://api.siputzx.my.id/api/ai/duckai?message=${encodeURIComponent(q)}&model=gpt-4o-mini`;
-    const { data } = await axios.get(apiUrl);
-
-    if (!data || !data.status || !data.data?.message) 
-      return reply("🤖 Sorry, I couldn't get a response from the AI. Please try again later.");
-
-    return reply(
-      `🤖 ${data.data.message}\n\n╭─────────────────◆\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`
-    );
-
-  } catch (e) {
-    console.error("Error in AI command:", e);
-    reply("⚠️ Oops! Something went wrong while contacting the AI.");
-  }
-});
-
-cmd({
-    pattern: "openai",
-    alias: ["chatgpt", "gpt3", "open-gpt"],
-    desc: "Chat with OpenAI",
+    pattern: "ai",
+    alias: ["dj","gpt","gpt4","openai"],
+    desc: "Chat with Tesla AI",
     category: "ai",
-    react: "🧠",
+    react: "🤖",
     filename: __filename
-},
-async (conn, mek, m, { from, args, q, reply, react }) => {
+}, async (conn, mek, m, { from, q, reply }) => {
     try {
-        if (!q) return reply("Please provide a message for OpenAI.\nExample: `.openai Hello`");
+        if (!q) return reply("⚠️ Please provide a message. Example: `.ai Hello`");
 
-        const apiUrl = `https://vapis.my.id/api/openai?q=${encodeURIComponent(q)}`;
+        const axios = require("axios");
+
+        // ارسال پیام مستقیم به AI
+        const apiUrl = `https://arcane-nx-cipher-pol.hf.space/api/ai/kimi?q=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
-        if (!data || !data.result) {
-            await react("❌");
-            return reply("OpenAI failed to respond. Please try again later.");
-        }
+        if (!data?.success || !data?.result)
+            return reply("🤖 Sorry, no response from AI. Try again later.");
 
-        await reply(`🧠 *OpenAI Response:*\n\n${data.result}`);
-        await react("✅");
+        // جواب AI
+        return reply(`🤖 ${data.result}`);
+
     } catch (e) {
-        console.error("Error in OpenAI command:", e);
-        await react("❌");
-        reply("An error occurred while communicating with OpenAI.");
+        console.error("AI command error:", e);
+        reply("⚠️ Something went wrong with AI.");
     }
 });
+
 
 cmd({
     pattern: "deepseek",
@@ -382,7 +333,7 @@ async (conn, mek, m, {
 
         // Send menu message with image
         const sentMsg = await conn.sendMessage(from, {  
-            image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+            image: { url: "https://files.catbox.moe/3fuy44.jpg" },
             caption: menuText,
             contextInfo: {
                 mentionedJid: [m.sender],

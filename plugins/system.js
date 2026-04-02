@@ -240,7 +240,8 @@ For get gitfile ${targetPath}
 
 cmd({
     pattern: "ping",
-    alias: ["speed","pong"],use: '.ping',
+    alias: ["speed","pong"],
+    use: '.ping',
     desc: "Check bot's response time.",
     category: "system",
     react: "⚡",
@@ -250,18 +251,17 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
     try {
         const start = new Date().getTime();
 
-        const reactionEmojis = ['🔥', '⚡', '🚀', '💨', '🎯', '🎉', '🌟', '💥', '🕐', '🔹'];
-        const textEmojis = ['💎', '🏆', '⚡️', '🚀', '🎶', '🌠', '🌀', '🔱', '🛡️', '✨'];
+        // ایموجی‌های سریع و تستی
+        const reactionEmojis = ['💨','⚡','🔥','💥','🚀','⚡️','🎯','🌟','✨','🌀'];
+        const textEmojis = ['💨','⚡','🔥','💥','🚀','⚡️','🎯','🌟','✨','🌀'];
 
         const reactionEmoji = reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
         let textEmoji = textEmojis[Math.floor(Math.random() * textEmojis.length)];
 
-        // Ensure reaction and text emojis are different
         while (textEmoji === reactionEmoji) {
             textEmoji = textEmojis[Math.floor(Math.random() * textEmojis.length)];
         }
 
-        // Send reaction using conn.sendMessage()
         await conn.sendMessage(from, {
             react: { text: textEmoji, key: mek.key }
         });
@@ -269,12 +269,12 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
         const end = new Date().getTime();
         const responseTime = (end - start) / 1000;
 
-        const text = `> *TESLA-BOT SPEED: ${responseTime.toFixed(2)}ms ${reactionEmoji}*`;
+        const text = `> *TESLA-BOT SPEED: ${responseTime.toFixed(2)}s ${reactionEmoji}*`;
 
         await conn.sendMessage(from, {
-    text: text,
-    contextInfo: getNewsletterContext(m.sender)
-}, { quoted: mek });
+            text: text,
+            contextInfo: getNewsletterContext(m.sender)
+        }, { quoted: mek });
 
     } catch (e) {
         console.error("Error in ping command:", e);
@@ -395,7 +395,7 @@ cmd({
   const githubRepoURL = 'https://github.com/NOTH-TESLA/TESLA-BOT';
 
   try {
-    const res = await fetch('https://api.github.com/repos/NOTHING-MD420/project-test');
+    const res = await fetch('https://api.github.com/repos/NOTH-TESLA/TESLA-BOT');
     if (!res.ok) throw new Error(`GitHub API Error: ${res.status}`);
     const repoData = await res.json();
 
@@ -639,7 +639,7 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
         const startTime = new Date(Date.now() - process.uptime() * 1000);
         
         
-        const text = `_*TESLA_BOT-V2 Has Been Running For ${uptime}*_`;
+        const text = `_*T E S L A ~ BOT Has Been Running For ${uptime}*_`;
 
         await conn.sendMessage(from, {
     text: text,

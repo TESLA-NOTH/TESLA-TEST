@@ -1,13 +1,8 @@
 const fetch = require("node-fetch");
 const config = require('../config');
-const { ytsearch } = require('@dark-yasiya/yt-dl.js');
-const { getConfig, setConfig } = require('../lib/configdb');
 const axios = require("axios");
 const { fetchJson } = require("../lib/functions");
-const { downloadTiktok } = require("@mrnima/tiktok-downloader");
-const { facebook } = require("@mrnima/facebook-downloader");
 const cheerio = require("cheerio");
-const { igdl } = require("ruhend-scraper");
 const { cmd, commands } = require('../command');
 
 

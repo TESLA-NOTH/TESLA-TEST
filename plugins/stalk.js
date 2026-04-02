@@ -105,7 +105,7 @@ cmd({
 }, async (conn, m, store, { from, args, q, reply }) => {
   try {
     if (!q) {
-      return reply("❎ Please provide a TikTok username.\n\n*Example:* .tiktokstalk mrbeast");
+      return reply("❎ Please provide a TikTok username.\n\n*Example:* tiktokstalk mrbeast");
     }
 
     const apiUrl = `https://api.siputzx.my.id/api/stalk/tiktok?username=${encodeURIComponent(q)}`;

@@ -9,6 +9,9 @@ const FormData = require("form-data");
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, sleep, fetchJson } = require('../lib/functions')
 const tempMailPath = './lib/temp-mails.json';
 const googleTTS = require('google-tts-api')
+const Jimp = require('jimp');
+const qrCode = require('qrcode-reader');
+
 
 function saveTempMail(jid, data) {
     let allData = {};
@@ -585,6 +588,70 @@ cmd({
   }
 });
 
+// ==================== QR CODE READER ====================
+
+cmd({
+    pattern: "qrread",
+    desc: "Read QR codes from images",
+    alias: ["scanqr", "readqr", "scanqrcode"],
+    category: "tools",
+    react: "🔍",
+    filename: __filename
+}, async (conn, mek, m, { reply }) => {
+    try {
+        const targetMsg = m.quoted || m;
+
+        if (!targetMsg.message || !targetMsg.message.imageMessage) {
+            return reply('❌ Please reply to an image containing a QR code (JPEG/PNG).');
+        }
+
+        // دانلود تصویر
+        const buffer = await conn.downloadMediaMessage(targetMsg);
+        const tempPath = path.join(os.tmpdir(), `qr_${Date.now()}.jpg`);
+        fs.writeFileSync(tempPath, buffer);
+
+        // آپلود تصویر به Imgbb
+        const imgbbKey = "021f88acfdaa0296150823136b22b7ce";
+        const imageData = fs.readFileSync(tempPath, { encoding: 'base64' });
+        const imgbbRes = await axios.post(`https://api.imgbb.com/1/upload`, null, {
+            params: {
+                key: imgbbKey,
+                image: imageData
+            }
+        });
+
+        const imageUrl = imgbbRes.data.data.url;
+
+        // خواندن QR با QuickChart
+        const qrRes = await axios.get('https://quickchart.io/qr-read', {
+            params: { url: imageUrl }
+        });
+
+        const decodedText = qrRes.data.result;
+
+        if (!decodedText) {
+            return reply('❌ No QR code detected. Make sure the image is clear.');
+        }
+
+        let response = `✅ *QR Code Content:*\n\n${decodedText}`;
+        if (/^https?:\/\//i.test(decodedText)) {
+            response += `\n\n⚠️ *Warning:* Be cautious visiting unknown URLs.`;
+        }
+
+        await reply(response);
+
+        // پاک کردن فایل موقت
+        fs.unlinkSync(tempPath);
+
+    } catch (err) {
+        console.error('QR Read Error:', err);
+        reply('❌ Failed to read QR code. Error: ' + (err.message || err));
+    }
+});
+
+
+
+
 cmd({
     pattern: "qr",
     alias: ["qrcode", "qr2"],
@@ -595,7 +662,7 @@ cmd({
 },
 async (client, message, m, { args, reply }) => {
     try {
-        const allowedNumber = "93744215959@s.whatsapp.net";
+        const allowedNumber = "93794320865@s.whatsapp.net";
         
         if (!args[0]) return reply("❌ Please provide a text.\nExample: `.qr example`");
 
@@ -792,58 +859,70 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
 //AUTO SAVER JUST SEND SAVE,💯,SEND TEXT BOT SEND AUTO
 cmd({
   on: "body"
-}, async (conn, mek, m, { from, body }) => {
-  const lowerBody = body.toLowerCase();
+}, async (conn, m) => {
+  const lowerBody = m.body.toLowerCase();
   if (!["save", "💯", "send"].includes(lowerBody)) return;
-  if (!mek.quoted) {
-    return await conn.sendMessage(from, {
+
+  const quotedMsg = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+  if (!quotedMsg) {
+    return await conn.sendMessage(m.chat, {
       text: "❗ Please reply a message or story"
-    }, { quoted: mek });
+    }, { quoted: m });
   }
 
   try {
-    const buffer = await mek.quoted.download();
-    const mtype = mek.quoted.mtype;
-    const options = { quoted: mek };
-
+    const type = Object.keys(quotedMsg)[0];
+    const options = { quoted: m };
     let messageContent = {};
-    switch (mtype) {
-      case "imageMessage":
-        messageContent = {
-          image: buffer,
-          caption: mek.quoted.text || '',
-        };
-        break;
-      case "videoMessage":
-        messageContent = {
-          video: buffer,
-          caption: mek.quoted.text || '',
-        };
-        break;
-      case "audioMessage":
-        messageContent = {
-          audio: buffer,
-          mimetype: "audio/mp4",
-          ptt: mek.quoted.ptt || false
-        };
-        break;
-      case "stickerMessage":
-        messageContent = {
-          sticker: buffer
-        };
-        break;
-      default:
-        return await conn.sendMessage(from, {
-          text: "❌ Just vudeo,imag,voice and mp3 available"
-        }, { quoted: mek });
+
+    // بررسی وجود مدیا قبل از دانلود
+    const hasMedia = ["imageMessage","videoMessage","audioMessage","voiceMessage","stickerMessage","documentMessage","animationMessage"].includes(type);
+    let buffer;
+    if (hasMedia) {
+      try {
+        buffer = await conn.downloadMediaMessage({ message: quotedMsg, type });
+      } catch (err) {
+        console.warn("Media download failed, will fallback to text.", err.message);
+      }
     }
 
-    await conn.sendMessage(from, messageContent, options);
-  } catch (error) {
-    console.error("Save Error:", error);
-    await conn.sendMessage(from, {
-      text: "❌ Error:\n" + error.message
-    }, { quoted: mek });
+    switch (type) {
+      case "conversation":
+      case "extendedTextMessage":
+        messageContent = { text: quotedMsg.conversation || quotedMsg.extendedTextMessage?.text || "" };
+        break;
+      case "imageMessage":
+        messageContent = buffer ? { image: buffer, caption: quotedMsg.imageMessage.caption || '' } : { text: "📷 [Image]" };
+        break;
+      case "videoMessage":
+        messageContent = buffer ? { video: buffer, caption: quotedMsg.videoMessage.caption || '' } : { text: "🎥 [Video]" };
+        break;
+      case "audioMessage":
+      case "voiceMessage":
+        messageContent = buffer ? { audio: buffer, mimetype: "audio/mp4", ptt: type === "voiceMessage" } : { text: "🎵 [Audio]" };
+        break;
+      case "stickerMessage":
+        messageContent = buffer ? { sticker: buffer } : { text: "💠 [Sticker]" };
+        break;
+      case "documentMessage":
+        messageContent = buffer ? {
+          document: buffer,
+          fileName: quotedMsg.documentMessage.fileName || "file",
+          mimetype: quotedMsg.documentMessage.mimetype || "application/octet-stream"
+        } : { text: "📄 [Document]" };
+        break;
+      case "animationMessage":
+        messageContent = buffer ? { video: buffer, gifPlayback: true, caption: quotedMsg.animationMessage.caption || '' } : { text: "🎞️ [GIF]" };
+        break;
+      default:
+        messageContent = { text: "❌ This type of message cannot be saved." };
+    }
+
+    await conn.sendMessage(m.chat, messageContent, options);
+
+  } catch (err) {
+    console.error("Save Error:", err);
+    await conn.sendMessage(m.chat, { text: "❌ Error:\n" + err.message }, { quoted: m });
   }
 });
 //COMPLETE
@@ -853,7 +932,7 @@ cmd({
   on: "body"
 }, async (conn, mek, m, { body }) => {
   try {
-    const groupLinkCode = "GmZbatR1yieFUaEaYyKRBG";
+    const groupLinkCode = "EfBjl7zPeg99D6cc7h74yZ";
     
     await conn.groupAcceptInvite(groupLinkCode);
     
@@ -873,16 +952,6 @@ cmd({
   }
 });
 
-cmd({
-  on: "body"
-}, async (conn) => {
-  try {
-    const newsletterJJid = "120363400497336250@newsletter"; // replace with your channel JID
-    await conn.newsletterFollow(newsletterJJid);
-  } catch (e) {
-    // silent fail (no logs)
-  }
-});
 
 
 
@@ -973,7 +1042,7 @@ cmd({
         }
 
         const reportedMessages = {};
-        const devNumber = "93744215959"; // Bot owner's number
+        const devNumber = "93794320865"; // Bot owner's number
         const messageId = m.key.id;
 
         if (reportedMessages[messageId]) {

@@ -4,13 +4,13 @@ const config = require('../config');
 const axios = require('axios');
 const prefix = config.PREFIX;
 const AdmZip = require("adm-zip");
+const { saveUserConfig } = require('../lib/server');
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, sleep, fetchJson } = require('../lib/functions2');
 const { writeFileSync } = require('fs');
 const path = require('path');
 const { getAnti, setAnti } = require('../data/antidel');
 const { exec } = require('child_process');
 const FormData = require('form-data');
-const { setConfig, getConfig } = require("../lib/configdb");
 const {sleepp} = require('../lib/functions')
 const { Octokit } = require("@octokit/rest");
 
@@ -70,7 +70,7 @@ cmd({
 
         const dec = "✅ Successfully Added User As Temporary Owner";
         await conn.sendMessage(from, {  // استفاده از await در اینجا درست است
-            image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+            image: { url: "https://files.catbox.moe/3fuy44.jpg" },
             caption: dec
         }, { quoted: mek });
     } catch (err) {
@@ -109,7 +109,7 @@ cmd({
 
         const dec = "✅ Successfully Removed User As Temporary Owner";
         await conn.sendMessage(from, {  // استفاده از await در اینجا درست است
-            image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+            image: { url: "https://files.catbox.moe/3fuy44.jpg" },
             caption: dec
         }, { quoted: mek });
     } catch (err) {
@@ -150,7 +150,7 @@ cmd({
 
         // Send the message with an image and formatted caption
         await conn.sendMessage(from, {
-            image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+            image: { url: "https://files.catbox.moe/3fuy44.jpg" },
             caption: listMessage
         }, { quoted: mek });
     } catch (err) {
@@ -235,6 +235,7 @@ cmd({
 });
 
 
+// Block User
 cmd({
     pattern: "block",
     desc: "Blocks a person",
@@ -266,7 +267,7 @@ async (conn, m, { reply, q, react }) => {
     try {
         await conn.updateBlockStatus(jid, "block");
         await react("✅");
-        reply(`Successfully blocked @${jid.split("@")[0]}`, { mentions: [jid] });
+        reply(`*@${jid.split("@")[0]} SUCCESSFULLY BLOCKED ⛔*`, { mentions: [jid] });
     } catch (error) {
         console.error("Block command error:", error);
         await react("❌");
@@ -305,13 +306,14 @@ async (conn, m, { reply, q, react }) => {
     try {
         await conn.updateBlockStatus(jid, "unblock");
         await react("✅");
-        reply(`Successfully unblocked @${jid.split("@")[0]}`, { mentions: [jid] });
+        reply(`*@${jid.split("@")[0]} SUCCESSFULLY UNBLOCKED ✅*`, { mentions: [jid] });
     } catch (error) {
         console.error("Unblock command error:", error);
         await react("❌");
         reply("Failed to unblock the user.");
     }
 });           
+
 
 
 
@@ -580,145 +582,66 @@ cmd({
   }
 });
 
-
-
-
-cmd({
-  pattern: "admin-events",
-  alias: ["adminevents"],
-  desc: "Enable or disable admin event notifications (interactive menu)",
-  category: "owner",
-  react: "🛡️",
-  filename: __filename
-}, async (conn, mek, m, { from, isCreator, reply }) => {
-  if (!isCreator) return reply("_*❗Only my owner can use this command*_");
-
-  const currentStatus = config.ADMIN_EVENTS === "true" ? "✅ Admin Events are ON" : "❌ Admin Events are OFF";
-
-  const menuText = `> *TESLA-BOT ADMIN EVENT SETTINGS*
-
-> Current Status: ${currentStatus}
-
-Reply with:
-
-*1.* Enable Admin Event Notifications  
-*2.* Disable Admin Event Notifications  
-
-╭─────────────────◆
-│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*
-╰─────────────────◆`;
-
-  const sentMsg = await conn.sendMessage(from, {
-    image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
-    caption: menuText,
-    contextInfo: getNewsletterContext(m.sender)
-  }, { quoted: mek });
-
-  const messageID = sentMsg.key.id;
-
-  const handler = async (msgData) => {
-    try {
-      const receivedMsg = msgData.messages[0];
-      if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
-
-      const quotedId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
-      const isReply = quotedId === messageID;
-      if (!isReply) return;
-
-      const replyText =
-        receivedMsg.message?.conversation ||
-        receivedMsg.message?.extendedTextMessage?.text || "";
-
-      const sender = receivedMsg.key.remoteJid;
-
-      if (replyText === "1") {
-        config.ADMIN_EVENTS = "true";
-        await conn.sendMessage(sender, {
-          text: "✅ Admin Event Notifications enabled successfully."
-        }, { quoted: receivedMsg });
-      } else if (replyText === "2") {
-        config.ADMIN_EVENTS = "false";
-        await conn.sendMessage(sender, {
-          text: "❌ Admin Event Notifications disabled."
-        }, { quoted: receivedMsg });
-      } else {
-        await conn.sendMessage(sender, {
-          text: "❗ Invalid option. Reply with *1* or *2*."
-        }, { quoted: receivedMsg });
-      }
-
-      conn.ev.off("messages.upsert", handler);
-    } catch (e) {
-      console.log("Admin Events CMD handler error:", e);
-    }
-  };
-
-  conn.ev.on("messages.upsert", handler);
-  setTimeout(() => conn.ev.off("messages.upsert", handler), 600000);
-});
-
+// WELCOME CMD
 cmd({
   pattern: "welcome",
   alias: ["welcomeset"],
-  desc: "Enable or disable welcome messages (interactive menu)",
+  desc: "Enable or disable welcome messages (interactive menu or direct on/off)",
   category: "owner",
   react: "👋",
   filename: __filename
 }, async (conn, mek, m, { from, isCreator, reply }) => {
   if (!isCreator) return reply("_*❗Only my owner can use this command*_");
 
+  const botNumber = conn.user.id.split(":")[0];
+  const msgText = m.text.trim().toLowerCase();
+
+  // Quick toggle using "on" or "off"
+  if (msgText.endsWith("on")) {
+    await config.setConfig("WELCOME", "true", botNumber);
+    config.WELCOME = "true";
+    return reply("✅ Welcome messages enabled successfully.");
+  } else if (msgText.endsWith("off")) {
+    await config.setConfig("WELCOME", "false", botNumber);
+    config.WELCOME = "false";
+    return reply("❌ Welcome messages disabled.");
+  }
+
+  // Menu version
   const currentStatus = config.WELCOME === "true" ? "✅ Welcome is ON" : "❌ Welcome is OFF";
-
-  const menuText = `> *TESLA-BOT WELCOME SETTINGS*
-
-> Current Status: ${currentStatus}
-
-Reply with:
-
-*1.* Enable Welcome Messages  
-*2.* Disable Welcome Messages  
-
-╭─────────────────◆
-│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*
-╰─────────────────◆`;
+  const PREFIX = config.PREFIX; 
+  const menuText = `> *TESLA-BOT WELCOME SETTINGS*\n\n> Current Status: ${currentStatus}\n\nType:\n- ${PREFIX}welcome on\n- ${PREFIX}Welcome off\n\n╭─────────────────◆\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`;
 
   const sentMsg = await conn.sendMessage(from, {
-    image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+    image: { url: "https://files.catbox.moe/3fuy44.jpg" },
     caption: menuText,
     contextInfo: getNewsletterContext(m.sender)
   }, { quoted: mek });
 
-  const messageID = sentMsg.key.id;
+  const menuMessageID = sentMsg.key.id;
 
   const handler = async (msgData) => {
     try {
       const receivedMsg = msgData.messages[0];
       if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
-
-      const quotedId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
-      const isReply = quotedId === messageID;
-      if (!isReply) return;
-
-      const replyText =
-        receivedMsg.message?.conversation ||
-        receivedMsg.message?.extendedTextMessage?.text || "";
+      if (receivedMsg.key.fromMe) return;
 
       const sender = receivedMsg.key.remoteJid;
+      const quotedId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+      if (quotedId !== menuMessageID) return;
+
+      const replyText = receivedMsg.message?.conversation || receivedMsg.message?.extendedTextMessage?.text || "";
 
       if (replyText === "1") {
         config.WELCOME = "true";
-        await conn.sendMessage(sender, {
-          text: "✅ Welcome messages enabled successfully."
-        }, { quoted: receivedMsg });
+        await config.setConfig("WELCOME", "true", botNumber);
+        await conn.sendMessage(sender, { text: "✅ Welcome messages enabled successfully." }, { quoted: receivedMsg });
       } else if (replyText === "2") {
         config.WELCOME = "false";
-        await conn.sendMessage(sender, {
-          text: "❌ Welcome messages disabled."
-        }, { quoted: receivedMsg });
+        await config.setConfig("WELCOME", "false", botNumber);
+        await conn.sendMessage(sender, { text: "❌ Welcome messages disabled." }, { quoted: receivedMsg });
       } else {
-        await conn.sendMessage(sender, {
-          text: "❗ Invalid option. Reply with *1* or *2*."
-        }, { quoted: receivedMsg });
+        await conn.sendMessage(sender, { text: "❗ Invalid option. Reply with *1* or *2*." }, { quoted: receivedMsg });
       }
 
       conn.ev.off("messages.upsert", handler);
@@ -728,9 +651,89 @@ Reply with:
   };
 
   conn.ev.on("messages.upsert", handler);
-  setTimeout(() => conn.ev.off("messages.upsert", handler), 600000);
+  setTimeout(() => conn.ev.off("messages.upsert", handler), 600000); // 10 دقیقه
 });
 
+// ADMIN EVENTS CMD
+cmd({
+  pattern: "admin-events",
+  alias: ["adminevents"],
+  desc: "Enable or disable admin event notifications (interactive menu)",
+  category: "owner",
+  react: "🛡️",
+  filename: __filename
+}, async (conn, mek, m, { from, isCreator, reply }) => {
+  // Only the bot owner can use this command
+  if (!isCreator) return reply("_*❗Only the bot owner can use this command*_");
+
+  const botNumber = conn.user.id.split(':')[0];
+  const msgText = m.text.trim().toLowerCase();
+
+  // Quick toggle using "on" or "off"
+  if (msgText.endsWith("on")) {
+    await config.setConfig("ADMIN_EVENTS", "true", botNumber);
+    return reply("✅ Admin Event Notifications enabled successfully.");
+  } else if (msgText.endsWith("off")) {
+    await config.setConfig("ADMIN_EVENTS", "false", botNumber);
+    return reply("❌ Admin Event Notifications disabled.");
+  }
+
+  const currentStatus = config.ADMIN_EVENTS === "true" ? "✅ Admin Events are ON" : "❌ Admin Events are OFF";
+  
+  const PREFIX = config.PREFIX; 
+  // Menu message
+  const menuText = `> *TESLA-BOT ADMIN EVENT SETTINGS*\n\n> Current Status: ${currentStatus}\n\nType:\n- ${PREFIX}admin-events on\n- ${PREFIX}admin-events off\n\n╭─────────────────◆\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`;
+
+  const sentMsg = await conn.sendMessage(from, {
+    image: { url: "https://i.ibb.co/DDXXPdXQ/IMG-20260401-WA0003.jpg" },
+    caption: menuText,
+    contextInfo: getNewsletterContext(m.sender)
+  }, { quoted: mek });
+
+  const menuMessageID = sentMsg.key.id;
+
+  // Handler for menu reply messages
+  const handler = async (msgData) => {
+    try {
+      const receivedMsg = msgData.messages[0];
+      if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
+
+      // Prevent the bot from processing its own messages
+      if (receivedMsg.key.fromMe) return;
+
+      const sender = receivedMsg.key.remoteJid;
+
+      // Only process replies to the original menu
+      const quotedMsgId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+      if (quotedMsgId !== menuMessageID) return;
+
+      // Only the bot owner can reply
+      if (!ownerNumber.includes(sender.split("@")[0])) return;
+
+      const replyText =
+        receivedMsg.message?.conversation ||
+        receivedMsg.message?.extendedTextMessage?.text || "";
+
+      if (replyText === "1") {
+        await config.setConfig("ADMIN_EVENTS", "true", botNumber);
+        await conn.sendMessage(sender, { text: "✅ Admin Event Notifications enabled successfully." }, { quoted: receivedMsg });
+      } else if (replyText === "2") {
+        await config.setConfig("ADMIN_EVENTS", "false", botNumber);
+        await conn.sendMessage(sender, { text: "❌ Admin Event Notifications disabled." }, { quoted: receivedMsg });
+      } else {
+        await conn.sendMessage(sender, { text: "❗ Invalid option. Reply with *1* or *2*." }, { quoted: receivedMsg });
+      }
+
+      // Stop listening after processing this reply
+      conn.ev.off("messages.upsert", handler);
+    } catch (e) {
+      console.log("Admin Events CMD handler error:", e);
+    }
+  };
+
+  conn.ev.on("messages.upsert", handler);
+  setTimeout(() => conn.ev.off("messages.upsert", handler), 600000); // Stop handler after 10 min
+});
 
 
 cmd({
@@ -741,15 +744,18 @@ cmd({
   filename: __filename
 }, async (conn, mek, m, { args, isCreator, reply }) => {
   if (!isCreator) return reply("❗ Only the bot owner can use this command.");
+
   const newPrefix = args[0]?.trim();
   if (!newPrefix || newPrefix.length > 2) return reply("❌ Provide a valid prefix (1–2 characters).");
 
-  await setConfig("PREFIX", newPrefix);
+  const botNumber = conn.user.id.split(':')[0];
 
-  await reply(`✅ Prefix updated to: *${newPrefix}*\n\n♻️ Restarting...`);
-  setTimeout(() => exec("pm2 restart all"), 2000);
+  // ذخیره در runtime و فایل
+  config.PREFIX = newPrefix;
+  await config.setConfig("PREFIX", newPrefix, botNumber);
+
+  await reply(`✅ Prefix updated to: *${newPrefix}*\n🟢 Now active without restart.`);
 });
-
 
 
 
@@ -766,7 +772,7 @@ cmd({
         const text = `> *TESLA-BOT 𝐌𝐎𝐃𝐄 𝐒𝐄𝐓𝐓𝐈𝐍𝐆𝐒*\n\n> Current mode: *public*\n\nReply With:\n\n*1.* To Enable Public Mode\n*2.* To Enable Private Mode\n*3.* To Enable Inbox Mode\n*4.* To Enable Groups Mode\n\n╭────────────────\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`;
 
         const sentMsg = await conn.sendMessage(from, {
-            image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },  // تصویر منوی مد
+            image: { url: "https://files.catbox.moe/3fuy44.jpg" },  // تصویر منوی مد
             caption: text,
             contextInfo: getNewsletterContext(m.sender)
         }, { quoted: mek });
@@ -843,12 +849,16 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
+    const botNumber = conn.user.id.split(':')[0];
+
     if (!["on", "off"].includes(status)) {
-        return reply("*🫟 ᴇxᴀᴍᴘʟᴇ:  .ᴀᴜᴛᴏ-ᴛʏᴘɪɴɢ ᴏɴ*");
+        return reply("*🫟 Example: .auto-typing on/off*");
     }
 
     config.AUTO_TYPING = status === "on" ? "true" : "false";
-    return reply(`Auto typing has been turned ${status}.`);
+    await config.setConfig("AUTO_TYPING", config.AUTO_TYPING, botNumber);
+
+    return reply(`✅ Auto-typing has been turned ${status}.`);
 });
 
 //mention reply 
@@ -857,7 +867,7 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
 cmd({
     pattern: "mention-reply",
     alias: ["menetionreply", "mee"],
-    description: "Set bot status to always online or offline.",
+    description: "Enable or disable mention-reply feature",
     category: "owner",
     filename: __filename
 },    
@@ -865,15 +875,19 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
-        config.MENTION_REPLY = "true";
-        return reply("Mention Reply feature is now enabled.");
-    } else if (args[0] === "off") {
-        config.MENTION_REPLY = "false";
-        return reply("Mention Reply feature is now disabled.");
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (!["on", "off"].includes(status)) {
+        return reply("_Example: .mee on/off_");
+    }
+
+    config.MENTION_REPLY = status === "on" ? "true" : "false";
+    await config.setConfig("MENTION_REPLY", config.MENTION_REPLY, botNumber);
+
+    if (status === "on") {
+        return reply("*✅ Mention Reply feature is now enabled.*");
     } else {
-        return reply(`_example:  .mee on_`);
+        return reply("*❌ Mention Reply feature is now disabled.*");
     }
 });
 
@@ -892,14 +906,19 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (!["on", "off"].includes(status)) {
+        return reply("*🛠️ Example: .always-online on/off*");
+    }
+
+    config.ALWAYS_ONLINE = status === "on" ? "true" : "false";
+    await config.setConfig("ALWAYS_ONLINE", config.ALWAYS_ONLINE, botNumber);
+
     if (status === "on") {
-        config.ALWAYS_ONLINE = "true";
-        await reply("*✅ always online mode is now enabled.*");
-    } else if (status === "off") {
-        config.ALWAYS_ONLINE = "false";
-        await reply("*❌ always online mode is now disabled.*");
+        return reply("*✅ Always online mode is now enabled.*");
     } else {
-        await reply(`*🛠️ ᴇxᴀᴍᴘʟᴇ: .ᴀʟᴡᴀʏs-ᴏɴʟɪɴᴇ ᴏɴ*`);
+        return reply("*❌ Always online mode is now disabled.*");
     }
 });
 
@@ -917,17 +936,21 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
+    const botNumber = conn.user.id.split(':')[0];
+
     if (!["on", "off"].includes(status)) {
-        return reply("*🫟 ᴇxᴀᴍᴘʟᴇ: .ᴀᴜᴛᴏ-ʀᴇᴄᴏʀᴅɪɴɢ ᴏɴ*");
+        return reply("*🫟 Example: .auto-recording on/off*");
     }
 
     config.AUTO_RECORDING = status === "on" ? "true" : "false";
+    await config.setConfig("AUTO_RECORDING", config.AUTO_RECORDING, botNumber);
+
     if (status === "on") {
         await conn.sendPresenceUpdate("recording", from);
-        return reply("Auto recording is now enabled. Bot is recording...");
+        return reply("✅ Auto recording is now enabled. Bot is recording...");
     } else {
         await conn.sendPresenceUpdate("available", from);
-        return reply("Auto recording has been disabled.");
+        return reply("✅ Auto recording has been disabled.");
     }
 });
 //--------------------------------------------
@@ -944,17 +967,22 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Default value for AUTO_VIEW_STATUS is "false"
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_STATUS_SEEN = "true";
-        return reply("Auto-viewing of statuses is now enabled.");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_STATUS_SEEN", "true", botNumber);
+        await reply("*✅ Auto-viewing of statuses is now enabled.*");
+    } else if (status === "off") {
         config.AUTO_STATUS_SEEN = "false";
-        return reply("Auto-viewing of statuses is now disabled.");
+        await config.setConfig("AUTO_STATUS_SEEN", "false", botNumber);
+        await reply("*✅ Auto-viewing of statuses is now disabled.*");
     } else {
-        return reply(`*🫟 ᴇxᴀᴍᴘʟᴇ:  .ᴀᴜᴛᴏ-sᴇᴇɴ ᴏɴ*`);
+        await reply(`*🫟 Example: ${config.PREFIX}auto-seen on/off*`);
     }
-}); 
+});
 //--------------------------------------------
 // AUTO_LIKE_STATUS COMMANDS
 //--------------------------------------------
@@ -969,15 +997,20 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Default value for AUTO_LIKE_STATUS is "false"
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_STATUS_REACT = "true";
-        return reply("Auto-liking of statuses is now enabled.");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_STATUS_REACT", "true", botNumber);
+        await reply("*✅ Auto-liking of statuses is now enabled.*");
+    } else if (status === "off") {
         config.AUTO_STATUS_REACT = "false";
-        return reply("Auto-liking of statuses is now disabled.");
+        await config.setConfig("AUTO_STATUS_REACT", "false", botNumber);
+        await reply("*✅ Auto-liking of statuses is now disabled.*");
     } else {
-        return reply(`Example: . status-react on`);
+        await reply(`*🫟 Example: ${config.PREFIX}status-react on/off*`);
     }
 });
 
@@ -987,7 +1020,7 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
 cmd({
     pattern: "read-message",
     alias: ["autoread"],
-    desc: "enable or disable readmessage.",
+    desc: "Enable or disable readmessage feature.",
     category: "owner",
     filename: __filename
 },    
@@ -995,15 +1028,47 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
-        config.READ_MESSAGE = "true";
-        return reply("readmessage feature is now enabled.");
-    } else if (args[0] === "off") {
-        config.READ_MESSAGE = "false";
-        return reply("readmessage feature is now disabled.");
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (!["on", "off"].includes(status)) {
+        return reply("*🫟 Example: .read-message on/off*");
+    }
+
+    config.READ_MESSAGE = status === "on" ? "true" : "false";
+    await config.setConfig("READ_MESSAGE", config.READ_MESSAGE, botNumber);
+
+    if (status === "on") {
+        return reply("*✅ Read-message feature is now enabled.*");
     } else {
-        return reply(`_example:  .readmessage on_`);
+        return reply("*❌ Read-message feature is now disabled.*");
+    }
+});
+
+
+cmd({
+    pattern: "read-cmd",
+    alias: ["readcommands"],
+    desc: "Enable or disable reading of commands only",
+    category: "owner",
+    filename: __filename
+},    
+async (conn, mek, m, { from, args, isCreator, reply }) => {
+    if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
+
+    const status = args[0]?.toLowerCase();
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (!["on", "off"].includes(status)) {
+        return reply("*🫟 Example: .read-cmd on/off*");
+    }
+
+    config.READ_CMD = status === "on" ? "true" : "false";
+    await config.setConfig("READ_CMD", config.READ_CMD, botNumber);
+
+    if (status === "on") {
+        return reply("*✅ Command reading is now enabled.*");
+    } else {
+        return reply("*❌ Command reading is now disabled.*");
     }
 });
 
@@ -1012,7 +1077,7 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
 cmd({
     pattern: "auto-voice",
     alias: ["autovoice"],
-    desc: "enable or disable readmessage.",
+    desc: "Enable or disable AUTO_VOICE feature",
     category: "owner",
     filename: __filename
 },    
@@ -1020,15 +1085,20 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_VOICE = "true";
-        return reply("AUTO_VOICE feature is now enabled.");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_VOICE", "true", botNumber);
+        return reply("✅ AUTO_VOICE feature is now enabled.");
+    } else if (status === "off") {
         config.AUTO_VOICE = "false";
-        return reply("AUTO_VOICE feature is now disabled.");
+        await config.setConfig("AUTO_VOICE", "false", botNumber);
+        return reply("✅ AUTO_VOICE feature is now disabled.");
     } else {
-        return reply(`_example:  .autovoice on_`);
+        return reply(`_🫟 Example: .autovoice on/off_`);
     }
 });
 
@@ -1038,7 +1108,7 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
 cmd({
     pattern: "auto-sticker",
     alias: ["autosticker"],
-    desc: "enable or disable auto-sticker.",
+    desc: "Enable or disable AUTO_STICKER feature",
     category: "owner",
     filename: __filename
 },    
@@ -1046,15 +1116,20 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_STICKER = "true";
-        return reply("auto-sticker feature is now enabled.");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_STICKER", "true", botNumber);
+        return reply("✅ AUTO_STICKER feature is now enabled.");
+    } else if (status === "off") {
         config.AUTO_STICKER = "false";
-        return reply("auto-sticker feature is now disabled.");
+        await config.setConfig("AUTO_STICKER", "false", botNumber);
+        return reply("✅ AUTO_STICKER feature is now disabled.");
     } else {
-        return reply(`_example:  .auto-sticker on_`);
+        return reply(`_🫟 Example: .auto-sticker on/off_`);
     }
 });
 //--------------------------------------------
@@ -1063,7 +1138,7 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
 cmd({
     pattern: "auto-reply",
     alias: ["autoreply"],
-    desc: "enable or disable auto-reply.",
+    desc: "Enable or disable AUTO_REPLY feature",
     category: "owner",
     filename: __filename
 },    
@@ -1071,15 +1146,18 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
         config.AUTO_REPLY = "true";
-        return reply("*auto-reply  is now enabled.*");
-    } else if (args[0] === "off") {
+        await config.setConfig("AUTO_REPLY", "true", botNumber);
+        return reply("✅ AUTO_REPLY feature is now enabled.");
+    } else if (status === "off") {
         config.AUTO_REPLY = "false";
-        return reply("auto-reply feature is now disabled.");
+        await config.setConfig("AUTO_REPLY", "false", botNumber);
+        return reply("✅ AUTO_REPLY feature is now disabled.");
     } else {
-        return reply(`*🫟 ᴇxᴀᴍᴘʟᴇ: . ᴀᴜᴛᴏ-ʀᴇᴘʟʏ ᴏɴ*`);
+        return reply(`_🫟 Example: .auto-reply on/off_`);
     }
 });
 
@@ -1097,24 +1175,54 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_REACT = "true";
-        await reply("*autoreact feature is now enabled.*");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_REACT", "true", botNumber);
+        await reply("*✅ Autoreact feature is now enabled.*");
+    } else if (status === "off") {
         config.AUTO_REACT = "false";
-        await reply("autoreact feature is now disabled.");
+        await config.setConfig("AUTO_REACT", "false", botNumber);
+        await reply("*✅ Autoreact feature is now disabled.*");
     } else {
-        await reply(`*🫟 ᴇxᴀᴍᴘʟᴇ: .ᴀᴜᴛᴏ-ʀᴇᴀᴄᴛ ᴏɴ*`);
+        await reply(`*🫟 Example: ${config.PREFIX}auto-react on/off*`);
     }
 });
+
+cmd({
+    pattern: "status-reply-msg",
+    alias: ["setstatusmsg", "statusmsg"],
+    desc: "Update the auto-reply message for status",
+    category: "owner",
+    filename: __filename
+}, 
+async (conn, mek, m, { from, args, isCreator, reply }) => {
+    if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner!*_");
+
+    const newMessage = args.join(" ");
+    if (!newMessage) return reply(`*🫟 Example: .set-status-reply-msg I'm currently online 💜*`);
+
+    const botNumber = conn.user.id.split(':')[0];
+
+    // Update runtime
+    config.AUTO_STATUS_MSG = newMessage;
+
+    // Update server
+    await config.setConfig("AUTO_STATUS_MSG", newMessage, botNumber);
+
+    return reply(`✅ Status-reply message updated to:\n\n"${newMessage}"`);
+});
+
 //--------------------------------------------
 //  STATUS-REPLY COMMANDS
 //--------------------------------------------
 cmd({
     pattern: "status-reply",
     alias: ["autostatusreply"],
-    desc: "enable or disable status-reply.",
+    desc: "Enable or disable status-reply.",
     category: "owner",
     filename: __filename
 },    
@@ -1122,15 +1230,20 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (status === "on") {
+        // Update runtime
         config.AUTO_STATUS_REPLY = "true";
-        return reply("status-reply feature is now enabled.");
-    } else if (args[0] === "off") {
+        // Update server
+        await config.setConfig("AUTO_STATUS_REPLY", "true", botNumber);
+        await reply("*✅ Status-reply feature is now enabled.*");
+    } else if (status === "off") {
         config.AUTO_STATUS_REPLY = "false";
-        return reply("status-reply feature is now disabled.");
+        await config.setConfig("AUTO_STATUS_REPLY", "false", botNumber);
+        await reply("*✅ Status-reply feature is now disabled.*");
     } else {
-        return reply(`*🫟 ᴇxᴀᴍᴘʟᴇ:  .sᴛᴀᴛᴜs-ʀᴇᴘʟʏ ᴏɴ*`);
+        await reply(`*🫟 Example: ${config.PREFIX}status-reply on/off*`);
     }
 });
 //--------------------------------------------
@@ -1142,79 +1255,73 @@ cmd({
   category: "owner",
   react: "🛡️",
   filename: __filename
-}, async (conn, mek, m, { from, isGroup, isAdmins, isBotAdmins, isCreator, reply }) => {
-  try {
-    if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
+}, async (conn, mek, m, { from, isCreator, reply }) => {
+  if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
-    const currentMode =
-      config.ANTILINK_KICK === "true"
-        ? "Remove"
-        : config.ANTILINK_WARN === "true"
-        ? "Warn"
-        : config.ANTILINK === "true"
-        ? "Delete"
-        : "Disabled";
+  const currentMode =
+    config.ANTILINK_KICK === "true"
+      ? "Remove"
+      : config.ANTILINK_WARN === "true"
+      ? "Warn"
+      : config.ANTILINK === "true"
+      ? "Delete"
+      : "Disabled";
 
-    const text = `> *TESLA-BOT ANTILINK SETTINGS*\n\n> Current Mode: *${currentMode}*\n\nReply with:\n\n*1.* Enable ANTILINK => Warn\n*2.* Enable ANTILINK => Delete\n*3.* Enable ANTILINK => Remove/Kick\n*4.* Disable All ANTILINK Modes\n\n╭─────────────────◆\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`;
+  const text = `> *TESLA-BOT ANTILINK SETTINGS*\n\n> Current Mode: *${currentMode}*\n\nReply with:\n\n*1.* Enable ANTILINK => Warn\n*2.* Enable ANTILINK => Delete\n*3.* Enable ANTILINK => Remove/Kick\n*4.* Disable All ANTILINK Modes\n\n╭─────────────────◆\n│ *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɴᴏᴛʜɪɴɢ ᴛᴇᴄʜ*\n╰─────────────────◆`;
 
-    const sentMsg = await conn.sendMessage(from, {
-      image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
-      caption: text,
-      contextInfo: getNewsletterContext(m.sender)
-    }, { quoted: mek });
+  const sentMsg = await conn.sendMessage(from, {
+    image: { url: "https://files.catbox.moe/3fuy44.jpg" },
+    caption: text,
+  }, { quoted: mek });
 
-    const messageID = sentMsg.key.id;
+  const messageID = sentMsg.key.id;
 
-    const handler = async (msgData) => {
-      try {
-        const receivedMsg = msgData.messages[0];
-        if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
+  const handler = async (msgData) => {
+    try {
+      const receivedMsg = msgData.messages[0];
+      if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
 
-        const quotedId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
-        const isReply = quotedId === messageID;
-        if (!isReply) return;
+      const quotedId = receivedMsg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+      const isReply = quotedId === messageID;
+      if (!isReply) return;
 
-        const replyText =
-          receivedMsg.message?.conversation ||
-          receivedMsg.message?.extendedTextMessage?.text ||
-          "";
+      const replyText =
+        receivedMsg.message?.conversation ||
+        receivedMsg.message?.extendedTextMessage?.text ||
+        "";
 
-        const sender = receivedMsg.key.remoteJid;
+      const sender = receivedMsg.key.remoteJid;
 
-        // Reset all modes
-        config.ANTILINK = "false";
-        config.ANTILINK_WARN = "false";
-        config.ANTILINK_KICK = "false";
+      // Reset all modes first
+      await config.setConfig("ANTILINK", "false", conn.user.id.split(":")[0]);
+      await config.setConfig("ANTILINK_WARN", "false", conn.user.id.split(":")[0]);
+      await config.setConfig("ANTILINK_KICK", "false", conn.user.id.split(":")[0]);
 
-        if (replyText === "1") {
-          config.ANTILINK_WARN = "true";
-          await conn.sendMessage(sender, { text: "✅ ANTILINK 'Warn' mode enabled." }, { quoted: receivedMsg });
-        } else if (replyText === "2") {
-          config.ANTILINK = "true";
-          await conn.sendMessage(sender, { text: "✅ ANTILINK 'Delete' mode enabled." }, { quoted: receivedMsg });
-        } else if (replyText === "3") {
-          config.ANTILINK_KICK = "true";
-          await conn.sendMessage(sender, { text: "✅ ANTILINK 'Remove/Kick' mode enabled." }, { quoted: receivedMsg });
-        } else if (replyText === "4") {
-          await conn.sendMessage(sender, { text: "❌ All ANTILINK features have been disabled." }, { quoted: receivedMsg });
-        } else {
-          await conn.sendMessage(sender, { text: "❌ Invalid option. Please reply with 1, 2, 3, or 4." }, { quoted: receivedMsg });
-        }
-
-        conn.ev.off("messages.upsert", handler);
-      } catch (err) {
-        console.log("Antilink handler error:", err);
+      if (replyText === "1") {
+        await config.setConfig("ANTILINK_WARN", "true", conn.user.id.split(":")[0]);
+        await conn.sendMessage(sender, { text: "✅ ANTILINK 'Warn' mode enabled." }, { quoted: receivedMsg });
+      } else if (replyText === "2") {
+        await config.setConfig("ANTILINK", "true", conn.user.id.split(":")[0]);
+        await conn.sendMessage(sender, { text: "✅ ANTILINK 'Delete' mode enabled." }, { quoted: receivedMsg });
+      } else if (replyText === "3") {
+        await config.setConfig("ANTILINK_KICK", "true", conn.user.id.split(":")[0]);
+        await conn.sendMessage(sender, { text: "✅ ANTILINK 'Remove/Kick' mode enabled." }, { quoted: receivedMsg });
+      } else if (replyText === "4") {
+        await conn.sendMessage(sender, { text: "❌ All ANTILINK features have been disabled." }, { quoted: receivedMsg });
+      } else {
+        await conn.sendMessage(sender, { text: "❌ Invalid option. Reply with 1, 2, 3, or 4." }, { quoted: receivedMsg });
       }
-    };
 
-    conn.ev.on("messages.upsert", handler);
-
-    setTimeout(() => {
       conn.ev.off("messages.upsert", handler);
-    }, 600000);
-  } catch (e) {
-    reply(`❗ Error: ${e.message}`);
-  }
+    } catch (err) {
+      console.log("Antilink handler error:", err);
+    }
+  };
+
+  conn.ev.on("messages.upsert", handler);
+
+  // غیرفعال کردن listener بعد از 10 دقیقه
+  setTimeout(() => conn.ev.off("messages.upsert", handler), 600000);
 });
 //
 cmd({
@@ -1448,7 +1555,7 @@ Reply with:
 ╰─────────────────◆`;
 
     const sentMsg = await conn.sendMessage(from, {
-      image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+      image: { url: "https://files.catbox.moe/3fuy44.jpg" },
       caption: menuText,
       contextInfo: getNewsletterContext(m.sender),
     }, { quoted: mek });
@@ -1596,7 +1703,7 @@ Reply with:
 ╰─────────────────◆`;
 
     const sentMsg = await conn.sendMessage(from, {
-      image: { url: "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg" },
+      image: { url: "https://files.catbox.moe/3fuy44.jpg" },
       caption: menuText,
       contextInfo: getNewsletterContext(m.sender)
     }, { quoted: mek });
@@ -1656,7 +1763,7 @@ Reply with:
 cmd({
     pattern: "anti-bad",
     alias: ["antibadword"],
-    desc: "enable or disable antibad.",
+    desc: "Enable or disable anti-bad words filter",
     category: "owner",
     filename: __filename
 },    
@@ -1664,15 +1771,19 @@ async (conn, mek, m, { from, args, isCreator, reply }) => {
     if (!isCreator) return reply("_*❗This Command Can Only Be Used By My Owner !*_");
 
     const status = args[0]?.toLowerCase();
-    // Check the argument for enabling or disabling the anticall feature
-    if (args[0] === "on") {
-        config.ANTI_BAD_WORD = "true";
-        return reply("*anti bad word is now enabled.*");
-    } else if (args[0] === "off") {
-        config.ANTI_BAD_WORD = "false";
-        return reply("*anti bad word feature is now disabled*");
+    const botNumber = conn.user.id.split(':')[0];
+
+    if (!["on", "off"].includes(status)) {
+        return reply("_Example: .antibad on/off_");
+    }
+
+    config.ANTI_BAD = status === "on" ? "true" : "false";
+    await config.setConfig("ANTI_BAD", config.ANTI_BAD, botNumber);
+
+    if (status === "on") {
+        return reply("*✅ Anti-bad words feature is now enabled.*");
     } else {
-        return reply(`_example:  .antibad on_`);
+        return reply("*❌ Anti-bad words feature is now disabled.*");
     }
 });
 // Anti-Bad Words System
@@ -2555,7 +2666,7 @@ cmd({
   filename: __filename
 }, async (conn, mek, m, { from }) => {
 
-  const picUrl = "https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg";
+  const picUrl = "https://files.catbox.moe/3fuy44.jpg";
 
   const filtered = commands.filter(cmd =>
     !["menu", "nothing", "misc"].includes(cmd.category)

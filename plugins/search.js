@@ -1,9 +1,7 @@
 const axios = require("axios");
 const config = require('../config');
 const { cmd, commands } = require("../command");
-const { translate } = require("@vitalets/google-translate-api");
 const l = console.log
-const dl = require('@bochilteam/scraper')  
 const ytdl = require('yt-search');
 const fs = require('fs-extra')
 var videotime = 60000 // 1000 min
@@ -72,7 +70,7 @@ async (conn, mek, m, { from, q, reply }) => {
 🔽 *Pressure*: ${data.main.pressure} hPa
         `.trim();
 
-        const imageUrl = 'https://i.postimg.cc/Y2GSGtfG/IMG-20250502-WA0012-1.jpg';
+        const imageUrl = 'https://files.catbox.moe/3fuy44.jpg';
 
         await conn.sendMessage(mek.chat, {
             image: { url: imageUrl },
