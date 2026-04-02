@@ -4,7 +4,11 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install && npm install -g pm2
+
+RUN npm install -g npm@11.12.1
+
+RUN npm install
+RUN npm install -g pm2
 
 COPY . .
 
