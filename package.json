@@ -9,8 +9,8 @@
     "restart": "pm2 restart tesla-bot"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+  "node": "20.x",
+  "npm": ">=10.0.0"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
