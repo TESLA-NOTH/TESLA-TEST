@@ -10,7 +10,6 @@ const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, sleep, fetchJson
 const tempMailPath = './lib/temp-mails.json';
 const googleTTS = require('google-tts-api')
 const Jimp = require('jimp');
-const qrCode = require('qrcode-reader');
 
 
 function saveTempMail(jid, data) {
@@ -965,14 +964,13 @@ cmd({
   pattern: "tourl",
   alias: ["upload", "url", "geturl"],
   react: "✅",
-  desc: "Upload media to catbox.moe and get a direct link",
+  desc: "Upload media to your CDN and get a direct link",
   category: "tools",
   filename: __filename
 }, async (client, message, args, { reply }) => {
   try {
     const quoted = message.quoted || message;
     const mime = quoted?.mimetype;
-
     if (!mime) throw "Please reply to an image, video, or audio file.";
 
     const media = await quoted.download();
@@ -981,31 +979,34 @@ cmd({
                       mime.includes("video") ? ".mp4" :
                       mime.includes("audio") ? ".mp3" : "";
     
-    const tempPath = path.join(os.tmpdir(), `upload_${Date.now()}${extension}`);
+    const timestampName = `${Date.now()}${extension}`;
+
+    // ذخیره موقت فایل
+    const tempPath = path.join(os.tmpdir(), `upload_${timestampName}`);
     fs.writeFileSync(tempPath, media);
 
+    // آپلود به CDN API خودت
     const form = new FormData();
-    form.append("reqtype", "fileupload");
-    form.append("fileToUpload", fs.createReadStream(tempPath));
+    form.append("file", fs.createReadStream(tempPath));
 
-    const res = await axios.post("https://catbox.moe/user/api.php", form, {
+    const res = await axios.post("https://tesla-noth-cdn.onrender.com/api/upload", form, {
       headers: form.getHeaders()
     });
 
     fs.unlinkSync(tempPath);
 
-    const url = res.data;
-    if (!url || !url.startsWith("https://")) {
-      throw "Upload failed or invalid response.";
-    }
+    if (!res.data?.success || !res.data?.url) throw "Upload failed or invalid response.";
 
+    const cdnUrl = res.data.url; // لینک CDN
+
+    // پیام به کاربر
     const msg = 
 `Hey, your media has been uploaded!\n\n` +
-`🔗 URL: ${url}\n` +
-`📦 Size: ${formatBytes(media.length)}\n` +
+`🔗 URL: ${cdnUrl}\n` +
+`📦 Size: ${(media.length / 1024).toFixed(2)} KB\n` +
 `📁 Type: ${mime.split("/")[0].toUpperCase()}\n` +
 `⏳ Expairition: No\n` +
-`🗂 Host: Catbox.moe`;
+`🗂 Host: Tesla CDN`;
 
     await client.sendMessage(message.chat, {
       image: { url: "https://files.catbox.moe/3fuy44.jpg" },
@@ -1017,6 +1018,12 @@ cmd({
     await reply(`❌ Error: ${err.message || err}`);
   }
 });
+
+
+
+
+
+
 
 // Format bytes to readable size
 
